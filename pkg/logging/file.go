@@ -8,20 +8,13 @@ import (
 	"time"
 )
 
-var (
-	LogSavePath = setting.LogSavePath
-	LogSaveName = setting.LogSaveName
-	LogFileExt  = setting.LogFileExt
-	TimeFormat  = setting.TimeFormat
-)
-
 func getLogFilePath() string {
-	return fmt.Sprintf("%s", LogSavePath)
+	return fmt.Sprintf("%s%s", setting.AppSetting.RuntimeRootPath, setting.AppSetting.LogSavePath)
 }
 
 func getLogFileFullPath() string {
 	prefixPath := getLogFilePath()
-	suffixPath := fmt.Sprintf("%s%s.%s", LogSaveName, time.Now().Format(TimeFormat), LogFileExt)
+	suffixPath := fmt.Sprintf("%s%s.%s", setting.AppSetting.LogSaveName, time.Now().Format(setting.AppSetting.TimeFormat), setting.AppSetting.LogFileExt)
 
 	return fmt.Sprintf("%s%s", prefixPath, suffixPath)
 }
@@ -34,7 +27,6 @@ func openLogFile(filePath string) *os.File {
 	case os.IsPermission(err):
 		log.Fatalf("Permission :%v", err)
 	}
-
 	handle, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("Fail to OpenFile :%v", err)

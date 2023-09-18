@@ -1,9 +1,10 @@
 package setting
 
 import (
-	"github.com/go-ini/ini"
 	"log"
 	"time"
+
+	"github.com/go-ini/ini"
 )
 
 type App struct {
@@ -45,7 +46,7 @@ type Database struct {
 var DatabaseSetting Database
 
 func Setup() {
-	Cfg, err := ini.Load("config/app.ini")
+	Cfg, err := ini.Load("conf/app.ini")
 	if err != nil {
 		log.Fatalf("Fail to parse 'conf/app.ini': %v", err)
 	}
@@ -55,11 +56,11 @@ func Setup() {
 	}
 
 	AppSetting.ImageMaxSize = AppSetting.ImageMaxSize * 1024 * 1024
-
 	err = Cfg.Section("server").MapTo(&ServerSetting)
 	if err != nil {
 		log.Fatalf("Cfg.MapTo ServerSetting err: %v", err)
 	}
+
 	ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
 	ServerSetting.WriteTimeout = ServerSetting.WriteTimeout * time.Second
 
