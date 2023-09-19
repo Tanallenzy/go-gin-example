@@ -3,16 +3,20 @@ package routers
 import (
 	"github.com/Eden/go-gin-example/middleware/jwt"
 	"github.com/Eden/go-gin-example/pkg/setting"
+	"github.com/Eden/go-gin-example/pkg/upload"
 	"github.com/Eden/go-gin-example/routers/api"
 	v1 "github.com/Eden/go-gin-example/routers/api/v1"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func InitRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	gin.SetMode(setting.ServerSetting.RunMode)
+	r.StaticFS("/upload/images", http.Dir(upload.GetImageFullPath()))
 	r.GET("/auth", api.GetAuth)
+	r.POST("/upload", api.UploadImage)
 	apiv1 := r.Group("/api/v1")
 	apiv1.Use(jwt.JWT())
 	{

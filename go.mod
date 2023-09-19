@@ -3,11 +3,12 @@ module github.com/Eden/go-gin-example
 go 1.20
 
 require (
-	github.com/astaxie/beego v1.12.3
+	github.com/astaxie/beego v1.10.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fvbock/endless v0.0.0-20170109170031-447134032cb6
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-ini/ini v1.67.0
+	github.com/gomodule/redigo v1.8.9
 	github.com/jinzhu/gorm v1.9.16
 	github.com/robfig/cron v1.2.0
 	github.com/unknwon/com v1.0.1
@@ -32,7 +33,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.9 // indirect
-	github.com/shiena/ansicolor v0.0.0-20230509054315-a9deabde6e02 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.4.0 // indirect
@@ -52,4 +52,5 @@ replace (
 	github.com/Eden/go-gin-example/pkg/setting => ../go-gin-example/pkg/setting
 	github.com/Eden/go-gin-example/pkg/util => ../go-gin-example/pkg/util
 	github.com/Eden/go-gin-example/routers => ../go-gin-example/routers
+	github.com/Eden/go-gin-example/service => ../go-gin-example/service
 )

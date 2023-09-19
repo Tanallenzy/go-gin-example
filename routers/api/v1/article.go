@@ -2,10 +2,12 @@ package v1
 
 import (
 	"github.com/Eden/go-gin-example/models"
+	"github.com/Eden/go-gin-example/pkg/app"
 	"github.com/Eden/go-gin-example/pkg/e"
 	"github.com/Eden/go-gin-example/pkg/logging"
 	"github.com/Eden/go-gin-example/pkg/setting"
 	"github.com/Eden/go-gin-example/pkg/util"
+	"github.com/Eden/go-gin-example/service/article_service"
 	"github.com/astaxie/beego/validation"
 	"github.com/gin-gonic/gin"
 	"github.com/unknwon/com"
@@ -13,28 +15,55 @@ import (
 )
 
 func ShowArticle(c *gin.Context) {
+	appG := app.Gin{c}
 	id := com.StrTo(c.Param("id")).MustInt()
-
 	valid := validation.Validation{}
 	valid.Min(id, 1, "id").Message("ID必须大于0")
 
-	code := e.INVALID_PARAMS
-	if !valid.HasErrors() {
-		if models.ExistArticleByID(id) {
-			code = e.SUCCESS
-			c.JSON(http.StatusOK, gin.H{
-				"code": code,
-				"msg":  e.GetMsg(code),
-				"data": models.GetArticle(id),
-			})
-		} else {
-			code = e.ERROR_NOT_EXIST_ARTICLE
-		}
-	} else {
-		for _, err := range valid.Errors {
-			logging.Info("error.key: %s, error.message: %s", err.Key, err.Message)
-		}
+	if valid.HasErrors() {
+		app.MarkErrors(valid.Errors)
+		appG.Response(http.StatusBadRequest, e.INVALID_PARAMS, nil)
+		return
 	}
+
+	articleService := article_service.Article{ID: id}
+	exist, err := articleService.ExistByID()
+
+	if err != nil {
+		appG.Response(http.StatusInternalServerError, e.ERROR_CHECK_EXIST_ARTICLE_FAIL, nil)
+		return
+	}
+
+	if !exist {
+		appG.Response(http.StatusOK, e.ERROR_NOT_EXIST_ARTICLE, nil)
+		return
+	}
+
+	article, err := articleService.Get()
+	if err != nil {
+		appG.Response(http.StatusInternalServerError, e.ERROR_GET_ARTICLE_FAIL, nil)
+		return
+	}
+
+	appG.Response(http.StatusOK, e.SUCCESS, article)
+
+	//code := e.INVALID_PARAMS
+	//if !valid.HasErrors() {
+	//	if models.ExistArticleByID(id) {
+	//		code = e.SUCCESS
+	//		c.JSON(http.StatusOK, gin.H{
+	//			"code": code,
+	//			"msg":  e.GetMsg(code),
+	//			"data": models.GetArticle(id),
+	//		})
+	//	} else {
+	//		code = e.ERROR_NOT_EXIST_ARTICLE
+	//	}
+	//} else {
+	//	for _, err := range valid.Errors {
+	//		logging.Info("error.key: %s, error.message: %s", err.Key, err.Message)
+	//	}
+	//}
 }
 
 func GetArticles(c *gin.Context) {

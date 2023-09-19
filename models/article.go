@@ -1,5 +1,7 @@
 package models
 
+import "github.com/jinzhu/gorm"
+
 type Article struct {
 	Model
 	TagID      int    `json:"tag_id"`
@@ -23,13 +25,16 @@ type Article struct {
 //	return nil
 //}
 
-func ExistArticleByID(id int) bool {
+func ExistArticleByID(id int) (bool, error) {
 	var article Article
-	db.Select("id").Where("id = ?", id).Where("deleted_on = 0").First(&article)
-	if article.ID > 0 {
-		return true
+	err := db.Select("id").Where("id = ?", id).Where("deleted_on = 0").First(&article).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return false, err
 	}
-	return false
+	if article.ID > 0 {
+		return true, nil
+	}
+	return false, nil
 }
 
 func GetArticleTotal(maps interface{}) (count int) {
@@ -42,10 +47,25 @@ func GetArticles(pageNum int, pageSize int, maps interface{}) (articles []Articl
 	return
 }
 
-func GetArticle(id int) (article Article) {
-	db.Where("id = ?", id).Where("deleted_on = 0").First(&article)
-	db.Model(&article).Related(&article.Tag)
-	return
+//func GetArticle(id int) (article Article) {
+//	db.Where("id = ?", id).Where("deleted_on = 0").First(&article)
+//	db.Model(&article).Related(&article.Tag)
+//	return
+//}
+
+func GetArticle(id int) (*Article, error) {
+	var article Article
+	err := db.Where("id = ? AND deleted_on = ? ", id, 0).First(&article).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	err = db.Model(&article).Related(&article.Tag).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	return &article, nil
 }
 
 func EditArticle(id int, data interface{}) {
