@@ -20,11 +20,12 @@ func ShowArticle(c *gin.Context) {
 	valid := validation.Validation{}
 	valid.Min(id, 1, "id").Message("ID必须大于0")
 
-	if valid.HasErrors() {
-		app.MarkErrors(valid.Errors)
-		appG.Response(http.StatusBadRequest, e.INVALID_PARAMS, nil)
-		return
-	}
+	//if valid.HasErrors() {
+	//	app.MarkErrors(valid.Errors)
+	//	appG.Response(http.StatusBadRequest, e.INVALID_PARAMS, nil)
+	//	return
+	//}
+	app.MarkErrorsAndExit(valid, appG)
 
 	articleService := article_service.Article{ID: id}
 	exist, err := articleService.ExistByID()
@@ -47,73 +48,80 @@ func ShowArticle(c *gin.Context) {
 
 	appG.Response(http.StatusOK, e.SUCCESS, article)
 
-	//code := e.INVALID_PARAMS
-	//if !valid.HasErrors() {
-	//	if models.ExistArticleByID(id) {
-	//		code = e.SUCCESS
-	//		c.JSON(http.StatusOK, gin.H{
-	//			"code": code,
-	//			"msg":  e.GetMsg(code),
-	//			"data": models.GetArticle(id),
-	//		})
-	//	} else {
-	//		code = e.ERROR_NOT_EXIST_ARTICLE
-	//	}
-	//} else {
-	//	for _, err := range valid.Errors {
-	//		logging.Info("error.key: %s, error.message: %s", err.Key, err.Message)
-	//	}
-	//}
 }
 
 func GetArticles(c *gin.Context) {
-	maps := make(map[string]interface{})
-	data := make(map[string]interface{})
+	var appG = app.Gin{c}
+	var articleService = article_service.Article{
+		PageSize: setting.AppSetting.PageSize,
+		PageNum:  util.GetPage(c),
+		State:    -1,
+		TagID:    -1,
+	}
 	valid := validation.Validation{}
 	if arg := c.PostForm("state"); arg != "" {
-		maps["state"] = com.StrTo(arg).MustInt()
-		valid.Range(maps["state"], 0, 1, "state").Message("状态只允许0或1")
+		articleService.State = com.StrTo(arg).MustInt()
+		valid.Range(articleService.State, 0, 1, "state").Message("状态只允许0或1")
 	}
 	if arg := c.PostForm("tag_id"); arg != "" {
-		maps["tag_id"] = com.StrTo(arg).MustInt()
-		valid.Min(maps["tag_id"], 1, "tag_id").Message("标签ID必须大于0")
+		articleService.TagID = com.StrTo(arg).MustInt()
+		valid.Min(articleService.TagID, 1, "tag_id").Message("标签ID必须大于0")
 	}
 
-	code := e.INVALID_PARAMS
+	//if valid.HasErrors() {
+	//	app.MarkErrors(valid.Errors)
+	//	appG.Response(http.StatusBadRequest, e.INVALID_PARAMS, nil)
+	//	return
+	//}
+	app.MarkErrorsAndExit(valid, appG)
 
-	if !valid.HasErrors() {
-		code = e.SUCCESS
-		data["lists"] = models.GetArticles(util.GetPage(c), setting.AppSetting.PageSize, maps)
-		data["total"] = models.GetArticleTotal(maps)
-	} else {
-		for _, err := range valid.Errors {
-			logging.Info("err.key: %s, err.message: %s", err.Key, err.Message)
-		}
+	total, err := articleService.Count()
+	if err != nil {
+		appG.Response(http.StatusInternalServerError, e.ERROR_COUNT_ARTICLE_FAIL, nil)
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg":  e.GetMsg(code),
-		"data": data,
-	})
+	articles, err := articleService.GetAll()
+	if err != nil {
+		appG.Response(http.StatusInternalServerError, e.ERROR_GET_ARTICLES_FAIL, nil)
+		return
+	}
+	data := make(map[string]interface{})
+	data["lists"] = articles
+	data["total"] = total
+	appG.Response(http.StatusOK, e.SUCCESS, data)
+}
 
+type AddArticleForm struct {
+	TagID         int    `form:"tag_id" valid:"Required;Min(1)"`
+	Title         string `form:"title" valid:"Required;MaxSize(100)"`
+	Desc          string `form:"desc" valid:"Required;MaxSize(255)"`
+	Content       string `form:"content" valid:"Required;MaxSize(65535)"`
+	CreatedBy     string `form:"created_by" valid:"Required;MaxSize(100)"`
+	CoverImageUrl string `form:"cover_image_url" valid:"Required;MaxSize(255)"`
+	State         int    `form:"state" valid:"Range(0,1)"`
 }
 
 func AddArticle(c *gin.Context) {
-	tagId := com.StrTo(c.PostForm("tag_id")).MustInt()
-	title := c.PostForm("title")
-	desc := c.PostForm("desc")
-	content := c.PostForm("content")
-	createBy := c.PostForm("created_by")
-	state := com.StrTo(c.DefaultPostForm("state", "0")).MustInt()
-
+	appG := app.Gin{c}
+	var form AddArticleForm
+	httpCode, errCode := app.BindAndValid(c, &form)
+	articleService := article_service.Article{
+		TagID:     com.StrTo(c.PostForm("tag_id")).MustInt(),
+		Title:     c.PostForm("title"),
+		Desc:      c.PostForm("desc"),
+		Content:   c.PostForm("content"),
+		CreatedBy: c.PostForm("created_by"),
+		State:     com.StrTo(c.DefaultPostForm("state", "0")).MustInt(),
+	}
 	valid := validation.Validation{}
-	valid.Min(tagId, 1, "tag_id").Message("标签ID必须大于0")
-	valid.Required(title, "title").Message("标题不能为空")
-	valid.Required(desc, "desc").Message("简述不能为空")
-	valid.Required(content, "content").Message("内容不能为空")
-	valid.Required(createBy, "created_by").Message("创建人不能为空")
-	valid.Range(state, 0, 1, "state").Message("状态只允许0或1")
+	valid.Min(articleService.TagID, 1, "tag_id").Message("标签ID必须大于0")
+	valid.Required(articleService.Title, "title").Message("标题不能为空")
+	valid.Required(articleService.Desc, "desc").Message("简述不能为空")
+	valid.Required(articleService.Content, "content").Message("内容不能为空")
+	valid.Required(articleService.CreatedBy, "created_by").Message("创建人不能为空")
+	valid.Range(articleService.State, 0, 1, "state").Message("状态只允许0或1")
+	app.MarkErrorsAndExit(valid, appG)
 
 	code := e.INVALID_PARAMS
 	if !valid.HasErrors() {
