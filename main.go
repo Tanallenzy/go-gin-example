@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/Eden/go-gin-example/models"
+	"github.com/Eden/go-gin-example/pkg/gredis"
 	"github.com/Eden/go-gin-example/pkg/logging"
 	"github.com/Eden/go-gin-example/pkg/setting"
 	"github.com/Eden/go-gin-example/routers"
@@ -15,6 +16,7 @@ func main() {
 	setting.Setup()
 	models.Setup()
 	logging.Setup()
+	gredis.Setup()
 	endless.DefaultReadTimeOut = setting.ServerSetting.ReadTimeout
 	endless.DefaultWriteTimeOut = setting.ServerSetting.WriteTimeout
 	endless.DefaultMaxHeaderBytes = 1 << 20
