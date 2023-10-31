@@ -41,7 +41,7 @@ func ExistArticleByID(id int) (bool, error) {
 }
 
 func GetArticleTotal(maps interface{}) (count int, err error) {
-	err = db.Model(&Article{}).Where(maps).Where("deleted_on = 0").Count(&count).Error
+	err = db.Model(&Article{}).Where(maps).Count(&count).Error
 	if err != nil {
 		return 0, err
 	}
@@ -49,7 +49,11 @@ func GetArticleTotal(maps interface{}) (count int, err error) {
 }
 
 func GetArticles(pageNum int, pageSize int, maps interface{}) (articles []*Article, err error) {
-	err = db.Preload("Tag").Where(maps).Offset(pageNum).Limit(pageSize).Find(&articles).Error
+	if pageSize > 0 {
+		err = db.Preload("Tag").Where(maps).Offset(pageNum).Limit(pageSize).Find(&articles).Error
+	} else {
+		err = db.Preload("Tag").Where(maps).Find(&articles).Error
+	}
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/Eden/go-gin-example/pkg/app"
 	"github.com/Eden/go-gin-example/pkg/e"
 	"github.com/Eden/go-gin-example/pkg/logging"
 	"github.com/Eden/go-gin-example/pkg/upload"
@@ -9,18 +10,15 @@ import (
 )
 
 func UploadImage(c *gin.Context) {
+	appG := app.Gin{c}
 	code := e.SUCCESS
 	data := make(map[string]string)
 
 	file, image, err := c.Request.FormFile("image")
 	if err != nil {
 		logging.Warn(err)
-		code = e.ERROR
-		c.JSON(http.StatusOK, gin.H{
-			"code": code,
-			"msg":  e.GetMsg(code),
-			"data": data,
-		})
+		appG.Response(http.StatusOK, e.ERROR, nil)
+		return
 	}
 
 	if image == nil {
@@ -48,9 +46,6 @@ func UploadImage(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg":  e.GetMsg(code),
-		"data": data,
-	})
+	appG.Response(http.StatusOK, code, data)
+	return
 }

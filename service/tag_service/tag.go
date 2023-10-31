@@ -3,9 +3,12 @@ package tag_service
 import (
 	"encoding/json"
 	"github.com/Eden/go-gin-example/models"
+	"github.com/Eden/go-gin-example/pkg/export"
 	"github.com/Eden/go-gin-example/pkg/gredis"
 	"github.com/Eden/go-gin-example/pkg/logging"
 	"github.com/Eden/go-gin-example/service/cache_service"
+	"io"
+	"strconv"
 )
 
 type Tag struct {
@@ -130,4 +133,44 @@ func (t *Tag) Delete() (bool, error) {
 	key := cache.GetTagKey()
 	gredis.Delete(key)
 	return true, nil
+}
+
+func (t *Tag) Export() (string, error) {
+	tags, err := t.GetAll()
+	if err != nil {
+		return "", err
+	}
+	titles := []string{"ID", "名称", "创建人", "创建时间", "修改人", "修改时间"}
+	keys := []string{"id", "name", "created_by", "created_on", "modified_by", "modified_on"}
+	var setData []map[string]string
+	for _, tag := range tags {
+		values := make(map[string]string)
+		values["id"] = strconv.Itoa(tag.ID)
+		values["name"] = tag.Name
+		values["created_by"] = tag.CreatedBy
+		values["created_on"] = strconv.Itoa(tag.CreatedOn)
+		values["modified_by"] = tag.ModifiedBy
+		values["modified_on"] = strconv.Itoa(tag.ModifiedOn)
+		setData = append(setData, values)
+	}
+	return export.ExcelExport("tag", "标签信息", titles, keys, setData)
+}
+
+func (t *Tag) Import(r io.Reader) error {
+	rows, err := export.ExcelImport(r, "标签信息")
+	if err != nil {
+		return err
+	}
+	for irow, row := range rows { //irow行数
+		if irow > 0 {
+			var data []string
+			for _, cell := range row {
+				data = append(data, cell)
+			}
+
+			models.AddTag(data[1], 1, data[2])
+		}
+	}
+
+	return nil
 }

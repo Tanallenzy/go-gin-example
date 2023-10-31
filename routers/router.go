@@ -2,6 +2,7 @@ package routers
 
 import (
 	"github.com/Eden/go-gin-example/middleware/jwt"
+	"github.com/Eden/go-gin-example/pkg/export"
 	"github.com/Eden/go-gin-example/pkg/setting"
 	"github.com/Eden/go-gin-example/pkg/upload"
 	"github.com/Eden/go-gin-example/routers/api"
@@ -15,6 +16,7 @@ func InitRouter() *gin.Engine {
 	r.Use(gin.Logger(), gin.Recovery())
 	gin.SetMode(setting.ServerSetting.RunMode)
 	r.StaticFS("/upload/images", http.Dir(upload.GetImageFullPath()))
+	r.StaticFS("/export", http.Dir(export.GetExcelFullPath()))
 	r.GET("/auth", api.GetAuth)
 	r.POST("/upload", api.UploadImage)
 	apiv1 := r.Group("/api/v1")
@@ -30,6 +32,11 @@ func InitRouter() *gin.Engine {
 		apiv1.POST("/article_add", v1.AddArticle)
 		apiv1.POST("/article_edit/:id", v1.EditArticle)
 		apiv1.GET("/article_del/:id", v1.DelArticle)
+
+		//导出标签
+		apiv1.POST("/tags/export", v1.ExportTag)
+		//导入标签
+		apiv1.POST("/tags/import", v1.ImportTag)
 	}
 
 	return r

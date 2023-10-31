@@ -11,7 +11,11 @@ type Tag struct {
 }
 
 func GetTags(pageNum int, pageSize int, maps interface{}) (tags []*Tag, err error) {
-	err = db.Where(maps).Where("deleted_on = 0").Offset(pageNum).Limit(pageSize).Find(&tags).Error
+	if pageSize > 0 {
+		err = db.Where(maps).Offset(pageNum).Limit(pageSize).Find(&tags).Error
+	} else {
+		err = db.Where(maps).Find(&tags).Error
+	}
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
@@ -19,7 +23,7 @@ func GetTags(pageNum int, pageSize int, maps interface{}) (tags []*Tag, err erro
 }
 
 func GetTagTotal(maps interface{}) (count int, err error) {
-	err = db.Model(&Tag{}).Where(maps).Where("deleted_on = 0").Count(&count).Error
+	err = db.Model(&Tag{}).Where(maps).Count(&count).Error
 	if err != nil {
 		return 0, err
 	}
